@@ -1,76 +1,48 @@
 package server;
 
+import client.PackageData;
+import com.google.gson.Gson;
+
 import java.io.*;
-import java.net.*;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        String[] arrayJSON = new String[1000];
-        start(arrayJSON);
+
+        Map<String, String> jsonDatabase = new HashMap<>();
+        start(jsonDatabase);
     }
-    public static void start(String[] arrayJSON) throws IOException {
+
+    public static void start(Map<String, String> jsonDatabase) throws IOException {
+
         final ServerConnection connection = ServerConnection.startServer();
+        JsonDatabase database = new JsonDatabase(jsonDatabase);
+        outerLoop:
         while(true){
-            String input = connection.getInput();
-            if(input.equals("exit")){
-                connection.close();
-                break;
+            String receivedJson = connection.getInput();
+            PackageData receivedData = new Gson().fromJson(receivedJson, PackageData.class);
+            Controller controller = new Controller();
+            switch (receivedData.getType()) {
+                case "get":
+                    controller.setCommand(new GetCommand(database,receivedData.getKey()));
+                    break;
+                case "delete":
+                    controller.setCommand(new DeleteCommand(database, receivedData.getKey()));
+                    break;
+                case "set":
+                    controller.setCommand(new SetCommand(database, receivedData.getValue(),  receivedData.getKey()));
+                    break;
+                case "exit":
+                    controller.setCommand(new ExitCommand());
+                    connection.close();
+                    break outerLoop;
             }
-            String[] inputArray = input.split(" ");
-            String message = "";
-            if (Integer.parseInt(inputArray[1]) < 0 || Integer.parseInt(inputArray[1]) > 999) {
-                message = "ERROR";
-            }else {
-                Controller controller = new Controller();
-                switch (inputArray[0]) {
-                    case "get":
-                        controller.setCommand(new GetCommand(arrayJSON, Integer.parseInt(inputArray[1])));
-                        break;
-                    case "delete":
-                        controller.setCommand(new DeleteCommand(arrayJSON, Integer.parseInt(inputArray[1])));
-                        break;
-                    case "set":
-                        controller.setCommand(new SetCommand(arrayJSON, inputArray,  Integer.parseInt(inputArray[1])));
-                        break;
-                }
-                message = controller.execute();
-            }
-            connection.sendMessage(message);
+
+            PackageDataServer message = controller.execute();
+            String jsonMessage = PackageDataServer.createJson(message);
+            connection.sendMessage(jsonMessage);
         }
-    }
-
-}
-class ServerConnection{
-    private final DataInputStream input;
-    private final DataOutputStream output;
-
-    public ServerConnection(Socket socket) throws IOException {
-        this.input = new DataInputStream(socket.getInputStream());
-        this.output = new DataOutputStream(socket.getOutputStream());
-    }
-
-    public static ServerConnection startServer() throws IOException {
-        System.out.println("Server started!");
-        String address = "127.0.0.1";
-        int port = 23456;
-
-        ServerSocket server = new ServerSocket(port, 50, InetAddress.getByName(address));
-        Socket socket = server.accept();
-
-        return new ServerConnection(socket);
-    }
-
-    public String getInput() throws IOException {
-        return input.readUTF();
-    }
-
-    public void sendMessage(String message) throws IOException {
-        output.writeUTF(message);
-    }
-
-    public void close() throws IOException {
-        output.close();
-        input.close();
     }
 }

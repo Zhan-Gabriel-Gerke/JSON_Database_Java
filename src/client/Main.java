@@ -1,50 +1,30 @@
 package client;
-
 import java.io.*;
-import java.net.*;
-import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws IOException {
         final ClientConnection connection = ClientConnection.startClient();
-        final Scanner sc = new Scanner(System.in);
-        while(true){
-            String input = sc.nextLine();
-            connection.sendMessage(input);
-            if(input.equals("exit")){
-                connection.close();
-                break;
+
+        String[] data = new String[3];
+        for (int i = 0; i < args.length - 1; i++) {
+            switch (args[i]) {
+                case "-t" -> data[0] = args[++i];
+                case "-k" -> data[1] = args[++i];
+                case "-v" -> data[2] = args[++i];
             }
-            System.out.println(connection.getInput());
         }
-    }
-}
-class ClientConnection {
-    private final DataInputStream input;
-    private final DataOutputStream output;
 
-    public ClientConnection(Socket socket) throws IOException {
-        this.input = new DataInputStream(socket.getInputStream());
-        this.output = new  DataOutputStream(socket.getOutputStream());
-    }
+        String json;
+        String jsonResponse;
+        try{
+            json = PackageData.createJson(data[0], data[1], data[2]);
+        }catch (Exception e){
+            json = PackageData.createJson(data[0], data[1], null);
+        }
+        connection.sendMessage(json);
+        System.out.println("Sent: " + json);
+        jsonResponse = connection.getInput();
+        System.out.println("Received: " + jsonResponse);
 
-    public void sendMessage(String message) throws IOException{
-        output.writeUTF(message);
-    }
-    public String getInput() throws IOException {
-        return input.readUTF();
-    }
-
-    public void close() throws IOException {
-        output.close();
-        input.close();
-    }
-    public static ClientConnection startClient() throws IOException {
-        System.out.println("Client started!");
-        String address = "127.0.0.1";
-        int port = 23456;
-
-        Socket socket = new Socket(InetAddress.getByName(address), port);
-        return new ClientConnection(socket);
     }
 }

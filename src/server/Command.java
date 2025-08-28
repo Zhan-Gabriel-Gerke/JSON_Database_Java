@@ -1,9 +1,7 @@
 package server;
 
-import java.util.Arrays;
-
 public interface Command {
-    String execute();
+    PackageDataServer execute();
 }
 
 class Controller {
@@ -13,67 +11,74 @@ class Controller {
         this.command = command;
     }
 
-    public String execute() {
+    public PackageDataServer execute() {
         return command.execute();
     }
 }
 
 class GetCommand implements Command{
 
-    private final String[] arrayJSON;
-    private final int index;
+    JsonDatabase db;
+    String key;
 
-    public GetCommand(String[] arrayJSON, int  index) {
-        this.arrayJSON = arrayJSON;
-        this.index = index;
+    public GetCommand(JsonDatabase db, String  key) {
+        this.db = db;
+        this.key = key;
     }
 
     @Override
-    public String execute() {
-        if (index < 0 || index >= arrayJSON.length || arrayJSON[index] == null || arrayJSON[index].isEmpty()) {
-            return "ERROR";
+    public PackageDataServer execute() {
+        String value = db.getValue(key);
+        if (value == null) {
+            return new PackageDataServer("ERROR", null, "No such key");
         }
-        return arrayJSON[index];
+        return new PackageDataServer("OK", null, value);
     }
 }
 
 class SetCommand implements Command{
 
-    private final String[] arrayJSON;
-    private final String[] dataArray;
-    private final int index;
+    JsonDatabase db;
+    String value;
+    String key;
 
-    public SetCommand(String[] arrayJSON, String[] dataArray, int index) {
-        this.arrayJSON = arrayJSON;
-        this.dataArray = dataArray;
-        this.index = index;
+    public SetCommand(JsonDatabase db, String value, String key) {
+        this.db = db;
+        this.value = value;
+        this.key = key;
     }
 
     @Override
-    public String execute() {
-        if  (index < 0 || index >= arrayJSON.length) {
-            return "ERROR";
-        }
-        arrayJSON[index] = String.join(" ", Arrays.copyOfRange(dataArray, 2, dataArray.length));
-        return "OK";
+    public PackageDataServer execute() {
+
+        db.setValue(key, value);
+
+        return new PackageDataServer("OK", null, null);
     }
 }
 
 class DeleteCommand implements Command{
-    private final String[] arrayJSON;
-    private final int index;
+    JsonDatabase db;
+    String key;
 
-    public DeleteCommand(String[] arrayJSON, int index) {
-        this.arrayJSON = arrayJSON;
-        this.index = index;
+    public DeleteCommand(JsonDatabase db, String key) {
+        this.db = db;
+        this.key = key;
     }
 
     @Override
-    public String execute() {
-        if (index < 0 || index >= arrayJSON.length) {
-            return "ERROR";
+    public PackageDataServer execute() {
+        if (!db.delete(key)) {
+            return new PackageDataServer("ERROR", null, "No such key");
         }
-        arrayJSON[index] = "";
-        return "OK";
+        return new PackageDataServer("OK", null, null);
+    }
+}
+
+class ExitCommand implements Command{
+
+    @Override
+    public PackageDataServer execute() {
+        return new PackageDataServer("OK", null, null);
     }
 }
