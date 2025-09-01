@@ -8,9 +8,9 @@ public class PackageDataServer {
     @Expose
     private String response;
     @Expose
-    private String value;
-    @Expose
     private String reason;
+    @Expose
+    private String value;
 
     PackageDataServer(String response, String value,  String reason) {
         this.response = response;

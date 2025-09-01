@@ -1,7 +1,9 @@
 package server;
 
+import java.io.IOException;
+
 public interface Command {
-    PackageDataServer execute();
+    PackageDataServer execute() throws IOException;
 }
 
 class Controller {
@@ -11,7 +13,7 @@ class Controller {
         this.command = command;
     }
 
-    public PackageDataServer execute() {
+    public PackageDataServer execute() throws IOException {
         return command.execute();
     }
 }
@@ -32,7 +34,7 @@ class GetCommand implements Command{
         if (value == null) {
             return new PackageDataServer("ERROR", null, "No such key");
         }
-        return new PackageDataServer("OK", null, value);
+        return new PackageDataServer("OK", value, null);
     }
 }
 
@@ -52,6 +54,7 @@ class SetCommand implements Command{
     public PackageDataServer execute() {
 
         db.setValue(key, value);
+        FileManager.writeToDB(db.getMap(), false);
 
         return new PackageDataServer("OK", null, null);
     }
@@ -71,6 +74,7 @@ class DeleteCommand implements Command{
         if (!db.delete(key)) {
             return new PackageDataServer("ERROR", null, "No such key");
         }
+        FileManager.writeToDB(db.getMap(), false);
         return new PackageDataServer("OK", null, null);
     }
 }
@@ -79,6 +83,13 @@ class ExitCommand implements Command{
 
     @Override
     public PackageDataServer execute() {
+            ServerConnection.stopServer();
+            try {
+                Main.stop();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
         return new PackageDataServer("OK", null, null);
     }
 }

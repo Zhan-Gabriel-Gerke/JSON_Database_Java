@@ -10,21 +10,16 @@ import java.net.Socket;
 class ServerConnection{
     private final DataInputStream input;
     private final DataOutputStream output;
+    private boolean isClosed = false;
+    private static boolean running = true;
 
     public ServerConnection(Socket socket) throws IOException {
         this.input = new DataInputStream(socket.getInputStream());
         this.output = new DataOutputStream(socket.getOutputStream());
     }
 
-    public static ServerConnection startServer() throws IOException {
-        System.out.println("Server started!");
-        String address = "127.0.0.1";
-        int port = 23456;
-
-        ServerSocket server = new ServerSocket(port, 50, InetAddress.getByName(address));
-        Socket socket = server.accept();
-
-        return new ServerConnection(socket);
+    public static ServerConnection startServer(Socket clientSocket) throws IOException {
+        return new ServerConnection(clientSocket);
     }
 
     public String getInput() throws IOException {
@@ -35,8 +30,23 @@ class ServerConnection{
         output.writeUTF(message);
     }
 
+    public static void stopServer() {
+        running = false;
+    }
+
+    public static boolean isServerRunning() {
+        return running;
+    }
+
     public void close() throws IOException {
         output.close();
         input.close();
+        isClosed = true;
+    }
+
+
+
+    public boolean isClosed() {
+        return isClosed;
     }
 }

@@ -3,10 +3,10 @@ package server;
 import java.util.Map;
 
 public class JsonDatabase {
-    private final Map<String, String> jsonDatabase;
+    private Map<String, String> jsonDatabase;
 
-    public JsonDatabase(Map<String, String> jsonDatabase) {
-        this.jsonDatabase = jsonDatabase;
+    public JsonDatabase() {
+        this.jsonDatabase = FileManager.getMapOfFile();
     }
 
     public String getValue(String key){
@@ -19,5 +19,13 @@ public class JsonDatabase {
 
     public boolean delete(String key){
         return jsonDatabase.remove(key) != null;
+    }
+
+    public Map<String, String> getMap(){
+        return jsonDatabase;
+    }
+
+    public void updateMap() {
+        this.jsonDatabase = FileManager.getMapOfFile();
     }
 }
